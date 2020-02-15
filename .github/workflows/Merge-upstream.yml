@@ -1,0 +1,37 @@
+name: Merge-upstream
+
+on:
+  push:
+    branches: 
+     - master
+  schedule:
+    - cron: 00 00 * * *
+    - cron: 00 12 * * *
+    - cron: 00 6 * * *
+    - cron: 00 18 * * *
+
+jobs:
+  merge:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        ref: master
+        fetch-depth: 0
+        lfs: true
+
+    - name: Set git identity
+      run : |
+        git config --global user.email "335908093@qq.com"
+        git config --global user.name "railjty"
+    - name: Load upstream commits
+      run: git pull https://github.com/Anankke/SSPanel-Uim.git --no-edit --strategy-option ours
+
+    - name: Push Commits
+      env:
+        DOWNSTREAM_BRANCH: master
+      run: git push origin $DOWNSTREAM_BRANCH
