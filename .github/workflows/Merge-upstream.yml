@@ -20,7 +20,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
       with:
-        ref: master
+        ref: dev
         fetch-depth: 0
         lfs: true
 
@@ -33,5 +33,5 @@ jobs:
 
     - name: Push Commits
       env:
-        DOWNSTREAM_BRANCH: master
+        DOWNSTREAM_BRANCH: dev
       run: git push origin $DOWNSTREAM_BRANCH
