@@ -743,6 +743,12 @@ class UserController extends BaseController
     {
         $Anns = Ann::orderBy('date', 'desc')->get();
 
+        if ($request->getParam('json') == 1) {
+            $res['Anns']      = $Anns;
+            $res['ret']         = 1;
+            return $this->echoJson($response, $res);
+        };
+
         return $this->view()->assign('anns', $Anns)->display('user/announcement.tpl');
     }
 
@@ -1010,6 +1016,53 @@ class UserController extends BaseController
         return $response->getBody()->write(json_encode($res));
     }
 
+    public function buy_traffic_package ($request, $response, $args)
+    {
+        $user = $this->user;
+        $shop = $request->getParam('shop');
+        $price = $shop->price;
+
+        if ($shop == null || $shop->traffic_package() == 0) {
+            $res['ret'] = 0;
+            $res['msg'] = '非法请求';
+            return $response->getBody()->write(json_encode($res));
+        }
+
+        if ($user->class < $shop->traffic_package()['class']['min'] || $user->class > $shop->traffic_package()['class']['max']) {
+            $res['ret'] = 0;
+            $res['msg'] = '您当前的会员等级无法购买此流量包';
+            return $response->getBody()->write(json_encode($res));
+        }
+
+        if (!$user->isLogin) {
+            $res['ret'] = -1;
+            return $response->getBody()->write(json_encode($res));
+        }
+
+        if (bccomp($user->money, $price, 2) == -1) {
+            $res['ret'] = 0;
+            $res['msg'] = '喵喵喵~ 当前余额不足，总价为' . $price . '元。</br><a href="/user/code">点击进入充值界面</a>';
+            return $response->getBody()->write(json_encode($res));
+        }
+
+        $user->money = bcsub($user->money, $price, 2);
+        $user->save();
+
+        $bought = new Bought();
+        $bought->userid = $user->id;
+        $bought->shopid = $shop->id;
+        $bought->datetime = time();
+        $bought->price = $price;
+        $bought->save();
+
+        $shop->buy($user);
+
+        $res['ret'] = 1;
+        $res['msg'] = '购买成功';
+
+        return $response->getBody()->write(json_encode($res));
+    }
+
     public function buy($request, $response, $args)
     {
         $coupon = $request->getParam('coupon');
@@ -1128,7 +1181,18 @@ class UserController extends BaseController
         $pageNum = $request->getQueryParams()['page'] ?? 1;
         $shops = Bought::where('userid', $this->user->id)->orderBy('id', 'desc')->paginate(15, ['*'], 'page', $pageNum);
         $shops->setPath('/user/bought');
-
+        if($request->getParam('json') == 1)
+        {
+            $res['ret'] = 1;
+            foreach ($shops as $shop) 
+            {
+                $shop->datetime = $shop->datetime("Y/m/d",$date_unix);
+                $shop->name = $shop->shop()->name;
+                $shop->content = $shop->shop()->content();
+            };
+            $res['shops'] = $shops;
+            return $response->getBody()->write(json_encode($res));
+        };
         return $this->view()->assign('shops', $shops)->display('user/bought.tpl');
     }
 
@@ -1703,6 +1767,20 @@ class UserController extends BaseController
     public function trafficLog($request, $response, $args)
     {
         $traffic = TrafficLog::where('user_id', $this->user->id)->where('log_time', '>', time() - 3 * 86400)->orderBy('id', 'desc')->get();
+
+        if($request->getParam('json') == 1)
+        {
+            $res['ret'] = 1;
+            foreach ($traffic as $trafficdata)
+            {
+                $trafficdata->total_used = $trafficdata->totalUsedRaw();
+                $trafficdata->name = $trafficdata->node()->name;
+            }
+            $res['traffic'] = $traffic;
+            
+            return $this->echoJson($response, $res);
+        }
+
         return $this->view()->assign('logs', $traffic)->display('user/trafficlog.tpl');
     }
 
@@ -1710,6 +1788,14 @@ class UserController extends BaseController
     {
         $pageNum = $request->getQueryParams()['page'] ?? 1;
         $logs = DetectRule::paginate(15, ['*'], 'page', $pageNum);
+
+        if($request->getParam('json') == 1)
+        {
+            $res['ret'] = 1;
+            $res['logs'] = $logs;
+            return $this->echoJson($response, $res);
+        }
+
         return $this->view()->assign('rules', $logs)->display('user/detect_index.tpl');
     }
 
@@ -1717,6 +1803,23 @@ class UserController extends BaseController
     {
         $pageNum = $request->getQueryParams()['page'] ?? 1;
         $logs = DetectLog::orderBy('id', 'desc')->where('user_id', $this->user->id)->paginate(15, ['*'], 'page', $pageNum);
+
+        if($request->getParam('json') == 1)
+        {
+            $res['ret'] = 1;
+            foreach ($logs as $log)
+            {
+                $log->node_name = $log->Node()->name;
+                $log->detect_rule_name = $log->DetectRule()->name;
+                $log->detect_rule_text = $log->DetectRule()->text;
+                $log->detect_rule_regex = $log->DetectRule()->regex;
+                $log->detect_rule_type = $log->DetectRule()->type;
+                $log->detect_rule_date = date('Y-m-d H:i:s',$log->datetime);
+            }
+            $res['logs'] = $logs;
+            return $this->echoJson($response, $res);
+        }
+
         return $this->view()->assign('logs', $logs)->display('user/detect_log.tpl');
     }
 
