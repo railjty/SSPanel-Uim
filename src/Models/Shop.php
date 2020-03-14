@@ -135,8 +135,8 @@ class Shop extends Model
         $content = json_decode($this->attributes['content'], true);
         $content_text = '';
 
-        if ($content->traffic_package() != 0) {
-            $user->transfer_enable += $content->bandwidth() * 1024 * 1024 * 1024;
+        if (array_key_exists('traffic_package', $content)) {
+            $user->transfer_enable += $content['bandwidth'] * 1024 * 1024 * 1024;
             $user->save();
             return;
         }
