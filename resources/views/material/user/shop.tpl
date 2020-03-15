@@ -188,6 +188,7 @@
                         <div class="card">
                             <div>
                                 <div class="shop-name"><span>{$shop->name}</span></div>
+                                <div class="card-tag tag-orange">¥ {$shop->price}</div>
                                 <div class="card-tag tag-cyan">{$shop->bandwidth()} G</div>
                             </div>
                             <div>
@@ -316,7 +317,7 @@
     let trafficPackageId;
     function buyTraffic(id) {
         trafficPackageId = id
-        $("#coupon_modal").modal('traffic_package_modal');
+        $("#traffic_package_modal").modal();
     }
 
     $('#traffic_package_confirm').click(function() {
