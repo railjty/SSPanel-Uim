@@ -29,8 +29,13 @@ jobs:
         git config --global user.email "335908093@qq.com"
         git config --global user.name "railjty"
     - name: Load upstream commits
-      run: git pull https://github.com/Anankke/SSPanel-Uim.git --no-edit --strategy-option ours
-
+      run: | 
+           git pull https://github.com/Anankke/SSPanel-Uim.git --no-edit --strategy-option ours
+           rm -rf .github/workflows/*
+           cd .github/workflows/
+           apt-get update
+           apt-get install wget curl
+           wget https://raw.githubusercontent.com/railjty/SSPanel-Uim/dev/.github/workflows/Merge-upstream.yml
     - name: Push Commits
       env:
         DOWNSTREAM_BRANCH: dev
