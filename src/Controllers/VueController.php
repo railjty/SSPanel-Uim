@@ -135,8 +135,14 @@ class VueController extends BaseController
         }
         $Ann = Ann::orderBy('date', 'desc')->first();
         $display_ios_class = $_ENV['display_ios_class'];
-        $ios_account = $_ENV['ios_account'];
-        $ios_password = $_ENV['ios_password'];
+        $display_ios_topup = $_ENV['display_ios_topup'];
+        $ios_account = null;
+        $ios_password = null;
+        if ($user->class >= $display_ios_class && $user->get_top_up() >= $display_ios_topup || $user->is_admin) {
+            $ios_account = $_ENV['ios_account'];
+            $ios_password = $_ENV['ios_password'];
+            $show_ios_account = true;
+        }
         $mergeSub = $_ENV['mergeSub'];
         $subUrl = $_ENV['subUrl'];
         $baseUrl = $_ENV['baseUrl'];
@@ -152,6 +158,8 @@ class VueController extends BaseController
             'user' => $user,
             'ssrSubToken' => $ssr_sub_token,
             'displayIosClass' => $display_ios_class,
+            'display_ios_topup' => $display_ios_topup,
+            'show_ios_account' => $show_ios_account,
             'iosAccount' => $ios_account,
             'iosPassword' => $ios_password,
             'mergeSub' => $mergeSub,
@@ -496,14 +504,14 @@ class VueController extends BaseController
         $mu = $request->getQueryParam('ismu');
         $relay_rule_id = $request->getQueryParam('relay_rule');
         $node = Node::find($id);
-        
+
 
         if ($node == null) {
             return $response->withJson([null]);
         }
 
-        $ssr_item = URL::getItem($user, $node, $mu, $relay_rule_id, 0);
-        $ss_item = URL::getItem($user, $node, $mu, $relay_rule_id, 1);
+        $ssr_item = $node->getItem($user, $mu, $relay_rule_id, 0);
+        $ss_item = $node->getItem($user, $mu, $relay_rule_id, 1);
 
         switch ($node->sort) {
             case 0:
@@ -707,7 +715,7 @@ class VueController extends BaseController
         $res['port_price_specify'] = $_ENV['port_price_specify'];
         $res['min_port'] = $_ENV['min_port'];
         $res['max_port'] = $_ENV['max_port'];
-        
+
         return $response->withJson($res);
     }
 }
